@@ -23,18 +23,78 @@ def score_func(scoring_df, eval_df):
     '''
     n_revenue = 0
     soln_df = pd.DataFrame()
-    for name in eval_df.index.values:
-        dfs = scoring_df[scoring_df['AreaName']==name]
-        dfs['Label']= eval_df['Labels'][name]
-    for lab in eval_df['Labels'].unique():
-        dfs = dfs[dfs['Label']==lab]
-        dfs['New_Price'] = np.mean(dfs['CurPrice'])
-        soln_df = pd.concat([soln_df,dfs], axis=0)
-        el = np.log(soln_df['PriceBeta']*soln_df['New_Price'])
-        soln_df['unit_sales'] = soln_df['Q'] * (np.exp(-el))
-        soln_df['NewRev'] = soln_df['unit_sales'] * soln_df['New_Price']
-        n_revenue += np.sum(soln_df['NewRev'])
+    label_dict = dict()
+    pricing_dict=dict()
+
+    for label in eval_df['Labels'].unique():
+        temp_df = eval_df[eval_df['Labels']==label]
+        label_dict[label] = temp_df.index.values
+
+    for cluster_num, areas in label_dict.items():
+        if areas.any():
+            df = pd.DataFrame()
+            region_price_dict = dict()
+            df = scoring_df[scoring_df['AreaName'].isin(areas)]
+
+            new_price = df.groupby('ProductId').mean()['CurPrice']
+            j_df = df.join(new_price,on='ProductId',rsuffix='NewPrice')
+
+        else:
+            continue
+        try:
+            el = j_df['FcstBeta'] * -j_df['CurPriceNewPrice']
+            j_df['unit_sales'] =j_df['Q'] * np.exp(el)
+            j_df['NewRev'] = j_df['unit_sales'] * j_df['CurPriceNewPrice']
+            n_revenue += np.sum(j_df['NewRev'])
+        except KeyError:
+
+            import pdb; pdb.set_trace()
+
     return n_revenue, np.sum(scoring_df['CurRev'])
+
+def pricing_function(scoring_df, eval_df):
+    '''
+    This function generates the new price of a pricing region for each product
+    by taking the mean of the current prices.
+
+    '''
+    label_dict = defaultdict(list)
+    pricing_dict=dict()
+
+    for label in eval_df['Labels'].unique():
+        temp_df = eval_df[eval_df['Labels']==label]
+        label_dict[label].append(temp_df.index.values)
+
+    #Iterate over clusters
+    # for item in label_dict.keys():
+    #     df = pd.DataFrame()
+    #     region_price_dict = dict()
+    #     #Iterate over states in cluster
+    #     for name in label_dict[item]:
+    #         for area in np.ndarray.tolist(name):
+    #             dfs = scoring_df[scoring_df['AreaName']==area]
+    #             df = pd.concat([df,dfs],axis = 0)
+    #     for prod in df['ProductId'].unique():
+    #         df2 = df[df['ProductId']==prod]
+    #         region_price_dict[prod] = df2['CurPrice'].mean()
+    #         pricing_dict[item] = region_price_dict
+
+    for cluster_num, areas in label_dict.items():
+        if areas:
+            df = pd.DataFrame()
+            region_price_dict = dict()
+            df = scoring_df[scoring_df['AreaName'].isin(areas[0])]
+
+
+            df.groupby('ProductId').mean()['CurPrice']
+
+            for prod in df['ProductId'].unique():
+                df2 = df[df['ProductId']==prod]
+                region_price_dict[prod] = df2['CurPrice'].mean()
+                pricing_dict[cluster_num] = region_price_dict
+        else:
+            pricing_dict[cluster_num] = None
+    return pricing_dict
 
 def labels_(eval_df):
     '''
@@ -67,8 +127,11 @@ def plotting(scoring_df,eval_df,means_labels):
         # import pdb; pdb.set_trace()
         old.append(rev[1])
         new.append(rev[0])
-    ax.plot(x,old, 'b')
-    ax.plot(x,new, 'r')
+    ax.plot(x,old, 'b',label='Old Revenue')
+    ax.plot(x,new, 'r', label='New Revenue')
+    ax.set_ylabel('Revenue in $M')
+    ax.set_xlabel('# Pricing Regions')
+    ax.legend()
     plt.show()
 
 if __name__ == '__main__':
