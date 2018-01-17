@@ -3,7 +3,10 @@ import numpy as np
 from sklearn.model_selection import GridSearchCV,cross_val_score
 from sklearn.cluster import KMeans
 import conf as s
+from collections import defaultdict
+import matplotlib.pyplot as plt
 
+fig, ax = plt.subplots()
 
 def load_data():
     '''
@@ -13,64 +16,64 @@ def load_data():
     df = s.read_and_drop()
     return df
 
-def feature_select(df):
-    '''
-    This function selects pertinent features from the large DF to utilize
-    in the clustering algorithm:
-    columns : 'ElaPrice', 'LocalStandardDeviation','DnElas', 'Locations'
-    '''
-    for column in df.columns:
-        try:
-            df[column] = df[column].str.replace('$','').astype(float)
-        except:
-            pass
-    df2 = df.copy()
-    return df2
-
-def weak_model(df2):
-    '''
-    This function takes in the trimmed Dataframe and fits a crude KMeans
-    algorithm to it for a baseline.
-
-    returns:
-
-    Expected Profit and Revenue from making one price zone split.
-    '''
-    km = KMeans()
-    km.fit(df2)
-    return km.cluster_centers_()
-
-
-def score_func():
+def score_func(scoring_df, eval_df):
     '''
     This function calculates the score of the model, by calculating the profit
     and revenue with the given number of splits.
     '''
-    
-    pass
+    n_revenue = 0
+    soln_df = pd.DataFrame()
+    for name in eval_df.index.values:
+        dfs = scoring_df[scoring_df['AreaName']==name]
+        dfs['Label']= eval_df['Labels'][name]
+    for lab in eval_df['Labels'].unique():
+        dfs = dfs[dfs['Label']==lab]
+        dfs['New_Price'] = np.mean(dfs['CurPrice'])
+        soln_df = pd.concat([soln_df,dfs], axis=0)
+        el = np.log(soln_df['PriceBeta']*soln_df['New_Price'])
+        soln_df['unit_sales'] = soln_df['Q'] * (np.exp(-el))
+        soln_df['NewRev'] = soln_df['unit_sales'] * soln_df['New_Price']
+        n_revenue += np.sum(soln_df['NewRev'])
+    return n_revenue, np.sum(scoring_df['CurRev'])
 
-def search(df2):
+def labels_(eval_df):
     '''
     This model grid searches the features to find the best parameters for
     the KMeans cluster.
 
     Returns:
 
-    Num_clusters, Profit, Revenue
+    dictionary- Keys = number of clusters, values = labels
     '''
-    km = KMeans()
-    params = {'n_clusters': [2,3,4,5,6,7,8]}
+    means_labels = dict()
+    for num in range(2,21):
+        km = KMeans(n_clusters=num)
+        km.fit(eval_df)
+        means_labels[num] = km.labels_
+    return means_labels
 
-    gs = GridSearchCV(estimator=km,param_grid= params, scoring='score_func',
-                      refit='best_params_')
-    gs.fit(df2)
-
-    return gs.best_params_
+def plotting(scoring_df,eval_df,means_labels):
+    '''
+    this function helps visualize the revenue curve comparing different grouping of
+    areas based on current price of the products.
+    '''
+    old = []
+    new = []
+    x = [x for x in range(2,21)]
+    for label in means_labels.values():
+        eval_df['Labels'] = np.ndarray.tolist(label)
+        rev = score_func(scoring_df=scoring_df,
+                         eval_df=eval_df)
+        # import pdb; pdb.set_trace()
+        old.append(rev[1])
+        new.append(rev[0])
+    ax.plot(x,old, 'b')
+    ax.plot(x,new, 'r')
+    plt.show()
 
 if __name__ == '__main__':
     df = load_data()
-    df2 = feature_select(df)
-    weak_profit,weak_revenue = weak_model(df2)
-    print('The weak model makes $' + weak_profit +' Profit, and $' ,weak_revenue + ' Revenue')
-    opt_clusters, opt_profit, opt_revenue = search(df2)
-    print('The Best model makes $' + weak_profit +' Profit, and $' ,weak_revenue + ' Revenue')
+    eval_df = s.cluster_df(df)
+    scoring_df = s.scoring_df(df)
+    means_labels = labels_(eval_df)
+    plotting(scoring_df=scoring_df,eval_df=eval_df, means_labels=means_labels)
