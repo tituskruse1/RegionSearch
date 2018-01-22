@@ -1,10 +1,10 @@
 import pandas as pd
 import numpy as np
-from sklearn.model_selection import GridSearchCV,cross_val_score
 from sklearn.cluster import KMeans
 import conf as s
 from collections import defaultdict
 import matplotlib.pyplot as plt
+import seaborn as sns
 
 def load_data():
     '''
@@ -39,6 +39,7 @@ def score_func(scoring_df, eval_df):
     New Profit - float, calculated using calc_func function.
     New Profit Margin - float, calculated by dividing the new profit by the  new revenue.
     '''
+
     n_revenue = 0
     n_profit = 0
     soln_df = pd.DataFrame()
@@ -64,7 +65,6 @@ def score_func(scoring_df, eval_df):
             continue
         try:
 
-            # n_revenue += calc_func(j_df)
             rev , prof = calc_func(j_df=j_df)
             n_revenue += rev
             n_profit += prof
@@ -93,46 +93,6 @@ def calc_func(j_df):
     profit = revenue - np.sum(j_df['unit_sales'] * j_df['Cost'])
     return revenue, profit
 
-def pricing_function(scoring_df, eval_df):
-    '''
-    This function generates the new price of a pricing region for each product
-    by taking the mean of the current prices.
-
-    Input:
-    scoring_df - DataFrame object with columns 'ProductId','AreaName','CurPrice',
-    'CurRev','Q','FcstBeta','CurRev','Cost'
-
-    eval_df - DataFrame object with AreaName as indices, product id as columns
-    and Current price as values.
-
-    Output:
-    pricing_dict - dictionary, keys = labels of clusters, values = dictionary where
-    keys = product id , keys = new price
-    '''
-    label_dict = defaultdict(list)
-    pricing_dict=dict()
-
-    for label in eval_df['Labels'].unique():
-        temp_df = eval_df[eval_df['Labels']==label]
-        label_dict[label].append(temp_df.index.values)
-
-    for cluster_num, areas in label_dict.items():
-        if areas:
-            df = pd.DataFrame()
-            region_price_dict = dict()
-            df = scoring_df[scoring_df['AreaName'].isin(areas[0])]
-
-
-            df.groupby('ProductId').mean()['CurPrice']
-
-            for prod in df['ProductId'].unique():
-                df2 = df[df['ProductId']==prod]
-                region_price_dict[prod] = df2['CurPrice'].mean()
-                pricing_dict[cluster_num] = region_price_dict
-        else:
-            pricing_dict[cluster_num] = None
-    return pricing_dict
-
 def labels_(eval_df):
     '''
     This model grid searches the features to find the best parameters for
@@ -152,7 +112,7 @@ def labels_(eval_df):
         means_labels[num] = km.labels_
     return means_labels
 
-def plotting(scoring_df,eval_df,means_labels):
+def plotting(scoring_df,eval_df):
     '''
     This function helps visualize the revenue, profit and margin curves comparing different grouping of
     areas based on current price of the products.
@@ -167,38 +127,60 @@ def plotting(scoring_df,eval_df,means_labels):
     means_labels- dictionary, keys = number of clusters, values = labels
 
     Output:
-    2 x 2 plot- upper right plot showing the profit of different 
+    2 x 2 plot- upper right plot showing the profit of different
     '''
-    fig,ax = plt.subplots(2,2)
-    old = []
-    new = []
-    prof = []
-    margins = []
-
+    fig, ax= plt.subplots()
     x = [x for x in range(2,21)]
-    for label in means_labels.values():
-        eval_df['Labels'] = np.ndarray.tolist(label)
-        new_r, old_r, profit, margin = score_func(scoring_df=scoring_df,
-                         eval_df=eval_df)
-        # import pdb; pdb.set_trace()
-        old.append(old_r)
-        new.append(new_r)
-        prof.append(profit)
-        margins.append(margin)
-    ax[0,0].plot(x,old, 'b',label='Old Revenue')
-    ax[0,0].plot(x,new, 'r', label='New Revenue')
-    ax[0,0].set_ylabel('Revenue in $M')
-    ax[0,0].set_xlabel('# Pricing Regions')
-    ax[0,0].set_title('Revenue Comparison Over Number of Regions')
-    ax[0,0].legend()
+    rev_box = []
+    margin_box = []
+    profit_box =[]
+    for num in range(1,51):
 
-    ax[0,1].plot(x,prof,'g',label='New Profit')
-    ax[0,1].set_title('Profit Curve Over Number of Regions')
-    ax[0,1].legend()
+        means_labels = labels_(eval_df)
+        old_rev = []
+        new_rev = []
+        new_prof = []
+        new_margins = []
 
-    ax[1,0].plot(x,margins,'g',label='Profit Margin')
-    ax[1,0].set_title('Profit MArgin Over Number of Regions')
-    ax[1,0].legend()
+        for key, label in means_labels.items():
+            eval_df['Labels'] = np.ndarray.tolist(label)
+            new_r, old_r, profit, margin = score_func(scoring_df=scoring_df,
+                             eval_df=eval_df)
+            # import pdb; pdb.set_trace()
+            old_rev.append(old_r)
+            new_rev.append(new_r)
+            new_prof.append(profit)
+            new_margins.append(margin)
+
+        rev_box.append(new_rev)
+        margin_box.append(new_margins)
+        profit_box.append(new_prof)
+
+    ax.plot(x,old_rev, 'b',label='Old Revenue')
+    ax.plot(x,new_rev, 'r', label='New Revenue')
+    ax.set_ylabel('Revenue in $M')
+    ax.set_xlabel('# Pricing Regions')
+    ax.set_title('Revenue Comparison Over Number of Regions')
+    ax.legend()
+
+    plt.show()
+
+    ax = sns.boxplot(pd.DataFrame(profit_box))
+    ax.set_title('Profit Curve Over Number of Regions')
+    plt.savefig('Profit_box.jpg')
+
+    plt.show()
+
+    ax = sns.boxplot(pd.DataFrame(margin_box))
+    ax.set_title('Profit Margin Over Number of Regions')
+    plt.savefig('Margin_box.jpg')
+
+    plt.show()
+
+    ax = sns.boxplot(pd.DataFrame(rev_box))
+    ax.set_title('Density of rev val over 50 iters')
+    plt.savefig('Rev_box.jpg')
+
     plt.show()
 
 if __name__ == '__main__':
@@ -206,4 +188,4 @@ if __name__ == '__main__':
     eval_df = s.cluster_df(df)
     scoring_df = s.scoring_df(df)
     means_labels = labels_(eval_df)
-    plotting(scoring_df=scoring_df,eval_df=eval_df, means_labels=means_labels)
+    plotting(scoring_df=scoring_df,eval_df=eval_df)
