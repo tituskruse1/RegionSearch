@@ -103,6 +103,7 @@ ENV/
 # confidential info
 
 data/
+map.py
 conf.py
 .DS_Store
 *.ipynb

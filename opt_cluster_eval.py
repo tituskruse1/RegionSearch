@@ -1,3 +1,9 @@
+'''
+Label generator to be used by opt_cluster_eval
+'''
+
+# Author: Titus Kruse <Titus.kruse1@gmail.com>
+
 import numpy as np
 import pandas as pd
 import seaborn as sns
@@ -7,6 +13,16 @@ from collections import defaultdict,Counter
 import conf as s
 
 def read_and_parce():
+    '''
+    This function reads in the data and creates the eval_df and scoring_df.
+
+    Inputs:
+    None
+
+    Outputs:
+    eval_df = DataFrame object
+    scoring_df = DataFrame object
+    '''
     df = s.read_and_drop()
     eval_df = s.cluster_df(df)
     scoring_df = s.scoring_df(df)
@@ -14,14 +30,27 @@ def read_and_parce():
     return scoring_df, eval_df
 
 def run_clusters(eval_df):
+    '''
+    This function runs 100 models and stores the areas luster labels dictionary
+    as well as creates a list of the names grouped together by cluster and makes
+    a list of all iterations.
 
+    Input:
+    eval_df
+
+    Output:
+    cluster_lab = dictionary, keys - name of area, values - cluster labels for
+    the areas.
+
+    cluster_lst= list of areas in each cluster for each iteration.
+    '''
     areas = eval_df.index.values
     cluster_lab=dict()
     cluster_lst = []
     for num in range(0,100):
         km = KMeans(n_clusters=13, n_init= 10, max_iter=300)
         km.fit(eval_df)
-        for idx, name in enumerate(areas):
+        for name in areas:
             try:
                 cluster_lab[name] += km.labels_[eval_df.index == name].tolist()
             except:
@@ -30,10 +59,12 @@ def run_clusters(eval_df):
         for clust in range(0,13):
             areas_clustered.append(areas[km.labels_==clust])
         cluster_lst.append(areas_clustered)
-    # import pdb; pdb.set_trace()
     return cluster_lab, cluster_lst
 
 def calc_func(cluster_lab):
+    '''
+    
+    '''
     names = []
     intersections = []
     for name,counter in cluster_lab.items():
