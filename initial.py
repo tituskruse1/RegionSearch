@@ -77,7 +77,7 @@ def plotting(scoring_, eval_):
     of last model ran over number of clusters.
     '''
     fig, ax = plt.subplots()
-    # x_vals = [x for x in range(2, 21)]
+    x_vals = [x for x in range(2, 21)]
     rev_box = []
     margin_box = []
     profit_box = []
@@ -89,10 +89,14 @@ def plotting(scoring_, eval_):
         margin_box.append(new_m)
         profit_box.append(new_prof)
         distances.append(dists)
-
-    ax = sns.boxplot(pd.DataFrame(distances))
-    ax.set_title('Inertia over clusters')
-    plt.savefig('5_product_distance_box.jpg')
+    pdb.set_trace()
+    updt_dist = inertia_helper(distances)
+    ax.plot(x_vals, updt_dist, 'b', label='Inertia')
+    ax.set_ylabel('Average inter Cluster Distance')
+    ax.set_xlabel('# Pricing Regions')
+    ax.set_title('Average inter Cluster Distance')
+    ax.legend()
+    plt.savefig('5_product_inertia.jpg')
 
     plt.show()
 
@@ -113,6 +117,18 @@ def plotting(scoring_, eval_):
     plt.savefig('5_product_Rev_box.jpg')
 
     plt.show()
+
+def inertia_helper(distances_):
+    '''
+    This function takes in the list of 50 iterations of 13 distances and takes the
+    average of the index in order to get average inter clustger distance for
+    each number of regions for all iterations.
+    '''
+    updt_dist = []
+    dist_df = pd.DataFrame(distances_)
+    for column in dist_df.columns:
+        updt_dist.append(np.mean(dist_df[column]))
+    return updt_dist
 
 
 def helper_dict(eval_):
