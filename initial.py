@@ -40,11 +40,13 @@ def labels_(eval_):
     dictionary- Keys = number of clusters, values = labels
     '''
     cluster_labels = dict()
+    dists = []
     for num in range(2, 21):
         model = KMeans(n_clusters=num)
         model.fit(eval_)
         cluster_labels[num] = model.labels_
-    return cluster_labels
+        dists.append(model.inertia_)
+    return cluster_labels, dists
 
 
 def plotting(scoring_, eval_):
@@ -75,41 +77,40 @@ def plotting(scoring_, eval_):
     of last model ran over number of clusters.
     '''
     fig, ax = plt.subplots()
-    x_vals = [x for x in range(2, 21)]
+    # x_vals = [x for x in range(2, 21)]
     rev_box = []
     margin_box = []
     profit_box = []
+    distances = []
     for num in range(1, 51):
-        old_rev, new_rev, new_prof, new_m = plotting_helper(scoring_=scoring_,
-                                                            eval_=eval_)
+        old_rev, new_rev, new_prof, new_m, dists = plotting_helper(scoring_=scoring_,
+                                                                   eval_=eval_)
         rev_box.append(new_rev)
         margin_box.append(new_m)
         profit_box.append(new_prof)
+        distances.append(dists)
 
-    ax.plot(x_vals, old_rev, 'b', label='Old Revenue')
-    ax.plot(x_vals, new_rev, 'r', label='New Revenue')
-    ax.set_ylabel('Revenue in $M')
-    ax.set_xlabel('# Pricing Regions')
-    ax.set_title('Revenue Comparison Over Number of Regions')
-    ax.legend()
+    ax = sns.boxplot(pd.DataFrame(distances))
+    ax.set_title('Inertia over clusters')
+    plt.savefig('5_product_distance_box.jpg')
 
     plt.show()
 
     ax = sns.boxplot(pd.DataFrame(profit_box))
     ax.set_title('Profit Curve Over Number of Regions')
-    plt.savefig('Profit_box.jpg')
+    plt.savefig('5_product_Profit_box.jpg')
 
     plt.show()
 
     ax = sns.boxplot(pd.DataFrame(margin_box))
     ax.set_title('Profit Margin Over Number of Regions')
-    plt.savefig('Margin_box.jpg')
+    plt.savefig('5_product_Margin_box.jpg')
 
     plt.show()
 
     ax = sns.boxplot(pd.DataFrame(rev_box))
     ax.set_title('Density of rev val over 50 iters')
-    plt.savefig('Rev_box.jpg')
+    plt.savefig('5_product_Rev_box.jpg')
 
     plt.show()
 
@@ -143,7 +144,6 @@ def helper_df(scoring_, areas):
     DataFrame object = columns -'AreaName','ProductId','CurPrice','NewPrice'
     '''
     area_df = scoring_[scoring_['AreaName'].isin(areas)]
-
     new_price = area_df.groupby('ProductId').mean()['CurPrice']
     return area_df.join(new_price, on='ProductId', rsuffix='NewPrice')
 
@@ -163,7 +163,7 @@ def plotting_helper(scoring_, eval_):
     new_prof= list of new profit values over number of splits
     new_margins= list of new profit margins over number of splits
     '''
-    labels = labels_(eval_)
+    labels, dists = labels_(eval_)
     old_rev = []
     new_rev = []
     new_prof = []
@@ -178,7 +178,7 @@ def plotting_helper(scoring_, eval_):
         new_rev.append(new_r)
         new_prof.append(profit)
         new_margins.append(margin)
-    return old_rev, new_rev, new_prof, new_margins
+    return old_rev, new_rev, new_prof, new_margins, dists
 
 
 def score_func(scoring_, eval_):
@@ -221,7 +221,6 @@ def score_func(scoring_, eval_):
         except KeyError:
 
             pdb.set_trace()
-
     return n_revenue, old_rev, n_profit, profit_m
 
 
