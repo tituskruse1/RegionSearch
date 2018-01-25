@@ -28,7 +28,7 @@ pricing combinations across all their areas.
 ![5_product_margin_box](https://user-images.githubusercontent.com/26101047/35399690-14e71bf0-01b2-11e8-87db-ac3d341bc30f.jpg)
 
 
-#Clustering Algorithm and Visualization:
+#Clustering Algorithm and Visualization
  I used KMeans clustering to find correlation areas to other areas using their
  current product pricing. In order to take into account for variance, I ran the
  model 100 times and took the most commonly occurring set of regions. This set
