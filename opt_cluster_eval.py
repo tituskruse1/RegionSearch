@@ -46,7 +46,7 @@ def run_clusters(eval_):
     cluster_ = dict()
     cluster_l = []
     for num in range(0, 100):
-        model = KMeans(n_clusters=13, n_init=10, max_iter=300)
+        model = KMeans(n_clusters=14, n_init=10, max_iter=300)
         model.fit(eval_)
         for name in areas:
             try:
@@ -54,7 +54,7 @@ def run_clusters(eval_):
             except:
                 cluster_[name] = model.labels_[eval_.index == name].tolist()
         areas_clustered = []
-        for clust in range(0, 13):
+        for clust in range(0, 14):
             areas_clustered.append(areas[model.labels_ == clust])
         cluster_l.append(areas_clustered)
     return cluster_, cluster_l

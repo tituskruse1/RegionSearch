@@ -32,9 +32,19 @@ pricing combinations across all their areas.
  I used KMeans clustering to find correlation areas to other areas using their
  current product pricing. In order to take into account for variance, I ran the
  model 100 times and took the most commonly occurring set of regions. This set
- appeared 32% of the time with second place being 12%.
+ appeared 32% of the time with second place being 12%. This resulted in me deciding
+ that 14 regions was the optimum number in order to effect the revenue and profit
+ the least, with the lowest variation over 50 models.
 
- ![screen shot 2018-01-25 at 10 16 37 am](https://user-images.githubusercontent.com/26101047/35402161-ed15b6ac-01b8-11e8-9884-da100e491563.png)
+
+ ![5_product_inertia](https://user-images.githubusercontent.com/26101047/35399602-d7b0d3c0-01b1-11e8-8a61-f8ffbc1cfb94.jpg)
+
+#Result
+In conclusion I was able to decrease the amount of individual pricing configurations
+by 40 percent with only a .02% decrease in revenue and a .04% increase in profit.
+
+![screen shot 2018-01-25 at 10 56 47 am](https://user-images.githubusercontent.com/26101047/35403952-97427ea8-01be-11e8-857f-5d5f1db01d31.png)
+
 
 #Python Libraries Used
 Sklearn
@@ -42,5 +52,3 @@ Matplotlib
 Seaborn
 Pandas
 Numpy
-
-![5_product_inertia](https://user-images.githubusercontent.com/26101047/35399602-d7b0d3c0-01b1-11e8-8a61-f8ffbc1cfb94.jpg)
