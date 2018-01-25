@@ -1,5 +1,5 @@
 '''
-generates optimum cluster and returns increase of profit, revenue and
+Generates optimum cluster and returns increase of profit, revenue and
 profit_margin.
 '''
 
@@ -13,14 +13,18 @@ import numpy as np
 
 def read_and_parce():
     '''
-    This function reads in the data and creates the eval_df and scoring_df.
+    This function calls the read_and_drop function from the conf file to return
+    the working data creates the eval_df and scoring_df.
 
     Inputs:
     None
 
     Outputs:
-    eval_df = DataFrame object
-    scoring_df = DataFrame object
+    eval_df = DataFrame object index- area names, columns- ProductId,
+    values- CurPrice
+
+    scoring_df = DataFrame object columns- 'ProductId','AreaName','CurPrice',
+    'CurRev','Q','FcstBeta','CurProfit','Cost
     '''
     raw_df = s.read_and_drop()
 
@@ -34,7 +38,7 @@ def run_clusters(eval_):
     a list of all iterations.
 
     Input:
-    eval_
+    eval_ = DataFrame object.
 
     Output:
     cluster_ = dictionary, keys - name of area, values - cluster labels for
@@ -105,24 +109,6 @@ def calc_func(cluster_):
                     cluster_legend[area] = num
     return None
 
-def table_maker(means_labels):
-    '''
-    This function takes the means labels and creates the tables to do market basket
-    analysis using the apriori algorithm to figure out how likely it would be for
-    areas to be grouped together.
-
-    Input:
-    means_labels = dictionary, Keys = area name, values = cluster labels over all iterations.
-    '''
-    for key, labels in means_labels.items():
-        empty_df = pd.DataFrame()
-        empty_df['area'] = key
-        empty_df['labels'] = labels
-        dfs = pd.get_dummies(empty_df['labels'], columns=[x for x in range(1, 14)])
-        empty_df = empty_df.drop(['labels'], axis=1)
-        basket_df = pd.concat([empty_df, dfs], axis=1)
-    return basket_df
-
 
 def cluster_frequency(cluster_):
     '''
@@ -151,7 +137,7 @@ def best_math(clusters, scoring_):
     the increase in profit, revenue and profit margin.
 
     Input:
-    opt_cluster
+    opt_cluster : list of tuples of area names in each cluster.
 
     Output:
     increase in profit, revenue and margin given the optimum clusters.

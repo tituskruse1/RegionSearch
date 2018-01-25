@@ -15,7 +15,9 @@ column to determine how much signal I could get in a model and also dropped any
 column that had more less than 2 unique values in them. The data had 2 categories
 of product, discontinued, and not discontinued, so I made sure to only have current
 items in my working data set. I also found that they are controlling 21 separate
-pricing combinations across all their areas.
+pricing combinations across all their areas. Then I ran a Kmeans clustering model
+on every number of regions from 2 to 21, 50 times each, in order to get more insight
+on which number of regions might be the best fit for our data. Below are the results.
 
 *X values = number of regions -2*
 
